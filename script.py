@@ -32,22 +32,38 @@ def writeToCSV(insertDictionary):
         for column in insertDictionary:
             currentDictionaryValue = insertDictionary.get(column)
             if not isinstance(columnsAndValuesDict.get(column), list):
-                if currentDictionaryValue:
-                    thewriter.writerow({
-                        'KIT_Product__c': id,
-                        'KIT_Price_Category__c': category,
+                if 'fixed' not in column :
+                    if currentDictionaryValue:
+                        thewriter.writerow({
+                            'KIT_Product__c': id,
+                            'KIT_Price_Category__c': category,
 
-                        'KIT_Lower_Bound__c':  lastRememberedLowerBound + 1,
-                        'KIT_Upper_Bound__c': columnsAndValuesDict.get(column),
-                        'KIT_Price__c': place_value_currency(currentDictionaryValue),
+                            'KIT_Lower_Bound__c':  lastRememberedLowerBound + 1,
+                            'KIT_Upper_Bound__c': columnsAndValuesDict.get(column),
+                            'KIT_Price__c': place_value_currency(currentDictionaryValue),
 
-                        'KIT_Overage_Block_Size__c': '',
-                        'KIT_Overage_Price__c': '',
+                            'KIT_Overage_Block_Size__c': '',
+                            'KIT_Overage_Price__c': '',
 
-                        'KIT_Slab__c': isSlab
-                    })
-                    lastRememberedLowerBound = columnsAndValuesDict.get(column)
-            else:
+                            'KIT_Slab__c': isSlab
+                        })
+                        lastRememberedLowerBound = columnsAndValuesDict.get(column)
+                elif 'fixed' in column :
+                    if currentDictionaryValue:
+                        thewriter.writerow({
+                            'KIT_Product__c': id,
+                            'KIT_Price_Category__c': category,
+
+                            'KIT_Lower_Bound__c':  '',
+                            'KIT_Upper_Bound__c': '',
+                            'KIT_Price__c': place_value_currency(currentDictionaryValue),
+
+                            'KIT_Overage_Block_Size__c': '',
+                            'KIT_Overage_Price__c': '',
+
+                            'KIT_Slab__c': False
+                        })
+            elif 'bis' not in column :
                 if currentDictionaryValue:
                     tmpArray = columnsAndValuesDict.get(column)
                     thewriter.writerow({
@@ -63,11 +79,29 @@ def writeToCSV(insertDictionary):
                         'KIT_Slab__c': isSlab
                     })
 
+            elif 'bis' in column :
+                 if currentDictionaryValue:
+                    tmpArray = columnsAndValuesDict.get(column)
+                    thewriter.writerow({
+                        'KIT_Product__c': id,
+                        'KIT_Price_Category__c': category,
+
+                        'KIT_Lower_Bound__c':  lastRememberedLowerBound + 1,
+                        'KIT_Upper_Bound__c': tmpArray[0],
+                        'KIT_Price__c': '',
+
+                        'KIT_Overage_Block_Size__c': tmpArray[1],
+                        'KIT_Overage_Price__c': place_value_currency(currentDictionaryValue),
+
+                        'KIT_Slab__c': isSlab
+                    })
+                    lastRememberedLowerBound = columnsAndValuesDict.get(column)[0]
+
 with open('toInsert.csv', 'w'):
     pass
 # clearing files
 
-print('Column Naming : \nx bis 5.000 \t\nx bis 7.000 \t\t\nx ab 7.000 \t\t\nx ab 10.000 per 15')
+print('Column Naming : \nx bis 5.000 \nx bis 7.000 \nx ab 7.000 \nx ab 10.000 per 15 \nx bis 50.000 per 5000')
 print('filename without .csv: ')
 filename = input()
 
@@ -97,13 +131,16 @@ with open(filename + '.csv', 'r') as csv_file:
             columnsToHandle.append(column)
 
     for column in columnsToHandle:
-        if 'ab' not in column:
-            tmpNumber = ''
-            for char in column:
-                if char.isdigit():
-                    tmpNumber += char
-            columnsAndValuesDict.update({column: int(tmpNumber)})
-        else:
+        if 'per' not in column :
+            if 'fixed' not in column :
+                tmpNumber = ''
+                for char in column:
+                    if char.isdigit():
+                        tmpNumber += char
+                columnsAndValuesDict.update({column: int(tmpNumber)})
+            elif 'fixed' in column :
+                columnsAndValuesDict.update({column: 'fixed'})
+        elif 'per' in column :
             tmpAbNumber = ''
             tmpOverageArray = []
             for char in column:
@@ -116,6 +153,8 @@ with open(filename + '.csv', 'r') as csv_file:
             if len(tmpOverageArray) == 1:
                 tmpOverageArray.append(1)
             columnsAndValuesDict.update({column: tmpOverageArray})
+
+    print(columnsAndValuesDict)
 
     for line in csv_reader:
 
